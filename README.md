@@ -21,7 +21,28 @@
 - Qt 不出现在任务栏（Windows）
 - 支持前端 API 控制 Qt 显示/隐藏/切换/自动策略
 
-## 2. 仓库结构
+## 2. 为什么不做真嵌入（SetParent）
+
+本项目明确采用“伪嵌入跟随”，而非“原生真嵌入”，原因来自我们实际验证与社区结论：
+
+- Electron/Chromium 并不提供稳定、官方支持的“把外部原生窗口嵌入到 WebView 绘制层”的能力。
+- 在 Windows 上即便调用 `SetParent` 成功，常见结果仍是：窗口一闪而过、被 Chromium 合成层遮挡、焦点/输入异常、拖动缩放后错位或丢失。
+- 这些问题不是单点 bug，而是窗口管理模型冲突：`HWND` 树关系不等于 Chromium 的渲染合成关系。
+- 不同显卡驱动、DPI、多屏、Windows 版本下，真嵌入行为一致性更差，难以形成可维护的工程方案。
+
+我们在本仓库演进过程中也复现了上述现象：
+
+- 早期尝试过 Win32 `SetParent` 路径，出现“Qt 窗口出现后消失/不可见”的问题。
+- 即使句柄层面显示调用成功，视觉层依然无法保证稳定嵌入。
+- 改为“独立 Qt 窗口 + 坐标/可见性同步”后，稳定性、交互一致性和可运维性明显提升。
+
+因此本项目最终决策是：
+
+- 不追求“进程内真嵌入”。
+- 采用“进程隔离 + 视觉融合”的伪嵌入架构。
+- 以坐标同步、状态同步、焦点策略来达到接近原生嵌入的用户体验。
+
+## 3. 仓库结构
 
 - `main.js`：Electron 主进程，坐标换算 + Python 进程通信 + 可见性策略
 - `preload.js`：对 renderer 暴露受控 API
@@ -30,7 +51,7 @@
 - `iframe_app.html`：模拟 Nuxt 子页面，向父页面上报目标 DOM rect
 - `qt_embed.py`：Python/Qt5 窗口控制与跟随逻辑
 
-## 3. 运行方式
+## 4. 运行方式
 
 前置：
 
@@ -45,7 +66,7 @@ npm install
 npm start
 ```
 
-## 4. 核心机制（最重要）
+## 5. 核心机制（最重要）
 
 ### 4.1 坐标链路
 
@@ -67,7 +88,7 @@ iframe 内目标 DOM（子页面坐标） -> 父页面 `iframe` 偏移叠加 -> 
 5. `main.js` 做 DPI/多屏换算后发给 Python
 6. `qt_embed.py` 执行窗口几何更新
 
-## 5. 关键文件说明
+## 6. 关键文件说明
 
 ### 5.1 `renderer.js`
 
@@ -87,7 +108,7 @@ iframe 内目标 DOM（子页面坐标） -> 父页面 `iframe` 偏移叠加 -> 
 - `_hide_from_taskbar_windows()`：Windows 隐藏任务栏图标
 - 可见性守护：避免系统时序导致窗口意外隐藏
 
-## 6. 前端可用 API（preload 暴露）
+## 7. 前端可用 API（preload 暴露）
 
 - `window.qtSync.show()`
 - `window.qtSync.hide()`
@@ -106,7 +127,7 @@ const state = await window.qtSync.getState();
 console.log(state);
 ```
 
-## 7. 迁移到你们真实项目（Nuxt2 + iframe）步骤
+## 8. 迁移到你们真实项目（Nuxt2 + iframe）步骤
 
 1. 在 Nuxt 子页面中确定目标 DOM（例如 OCC Canvas 容器）
 2. 子页面上报目标 rect 到父页面（`postMessage`）
@@ -119,7 +140,7 @@ console.log(state);
 - 同源场景：可直接读取 iframe DOM
 - 跨域场景：必须使用 `postMessage` 且校验 `origin + source`
 
-## 8. 常见问题
+## 9. 常见问题
 
 ### Q1: 跟随抖动/闪烁
 
@@ -140,7 +161,7 @@ console.log(state);
 - Qt flags 使用 `Qt.Tool`
 - Win32 扩展样式加 `WS_EX_TOOLWINDOW`、去 `WS_EX_APPWINDOW`
 
-## 9. 生产化建议（范式沉淀）
+## 10. 生产化建议（范式沉淀）
 
 - 协议标准化：统一消息结构（包含 `type/targetId/ts/sourceVersion`）
 - 可观测性：加统一 debug 面板与日志导出
