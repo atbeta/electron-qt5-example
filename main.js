@@ -35,7 +35,7 @@ function getAutoVisible() {
   if (!mainWindow || mainWindow.isDestroyed()) {
     return false;
   }
-  return mainWindow.isFocused() && !mainWindow.isMinimized();
+  return mainWindow.isVisible() && !mainWindow.isMinimized();
 }
 
 function getCurrentVisiblePreference() {

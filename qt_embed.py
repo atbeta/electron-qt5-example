@@ -120,8 +120,9 @@ class FloatingQtPanel(QWidget):
         if self._wants_visible and self._has_bounds:
             if not self.isVisible():
                 self.show()
-            self.raise_()
-        elif self.isVisible() and not self.isActiveWindow():
+            if self._topmost:
+                self.raise_()
+        elif self.isVisible():
             self.hide()
 
     def handle_command(self, payload: dict):
@@ -137,15 +138,17 @@ class FloatingQtPanel(QWidget):
             self.status.setText(f"状态：已对齐容器 x={x}, y={y}, w={width}, h={height}")
             if self._is_visible:
                 self.show()
-                self.raise_()
+                if self._topmost:
+                    self.raise_()
 
         elif cmd_type == "set_visible":
             self._wants_visible = bool(payload.get("visible", True))
             self._is_visible = self._wants_visible
             if self._wants_visible and self._has_bounds:
                 self.show()
-                self.raise_()
-            elif not self.isActiveWindow():
+                if self._topmost:
+                    self.raise_()
+            else:
                 self.hide()
 
         elif cmd_type == "set_topmost":
@@ -153,8 +156,10 @@ class FloatingQtPanel(QWidget):
             if self._topmost != topmost:
                 self._topmost = topmost
                 self._apply_window_flags(force_show=self._is_visible and self._has_bounds)
-            if self._is_visible and self._has_bounds:
+            if self._is_visible and self._has_bounds and self._topmost:
                 self.raise_()
+            elif self.isVisible() and not self._topmost:
+                self.lower()
 
         elif cmd_type == "shutdown":
             self.close()
