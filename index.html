@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Qt 伪嵌入跟随 Demo</title>
+    <style>
+      body {
+        margin: 0;
+        font-family: Arial, sans-serif;
+        background: #0f172a;
+        color: #e2e8f0;
+      }
+      .app {
+        padding: 20px;
+      }
+      .title {
+        margin: 0 0 8px;
+      }
+      .desc {
+        margin: 0 0 16px;
+        color: #cbd5e1;
+      }
+      .toolbar {
+        display: flex;
+        gap: 10px;
+        align-items: center;
+        margin: 0 0 12px;
+      }
+      .toolbar button {
+        border: 1px solid #334155;
+        background: #0b1220;
+        color: #e2e8f0;
+        border-radius: 8px;
+        padding: 6px 12px;
+        cursor: pointer;
+      }
+      .toolbar button:hover {
+        border-color: #38bdf8;
+      }
+      #qt-state {
+        font-size: 12px;
+        color: #93c5fd;
+      }
+      #host {
+        position: relative;
+        width: calc(100vw - 40px);
+        height: calc(100vh - 180px);
+        border: 2px dashed #38bdf8;
+        border-radius: 10px;
+        background: #0b1120;
+        overflow: hidden;
+      }
+      #nuxt-frame {
+        width: 100%;
+        height: 100%;
+        border: 0;
+        background: #0b1120;
+      }
+      .hint {
+        position: absolute;
+        left: 10px;
+        top: 10px;
+        background: rgba(2, 6, 23, 0.78);
+        border: 1px solid #334155;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 12px;
+        line-height: 1.5;
+        pointer-events: none;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="app">
+      <h2 class="title">Qt 伪嵌入跟随（Python 主控）</h2>
+      <p class="desc">蓝色区域是 Electron 容器，Qt 是独立窗口，仅做位置/大小/可见性/置顶跟随。</p>
+      <div class="toolbar">
+        <button id="btn-qt-show">显示 Qt</button>
+        <button id="btn-qt-hide">隐藏 Qt</button>
+        <button id="btn-qt-toggle">切换显示</button>
+        <button id="btn-qt-auto">恢复自动</button>
+        <span id="qt-state">状态：初始化中...</span>
+      </div>
+      <div id="host">
+        <iframe id="nuxt-frame" src="./iframe_app.html" title="Nuxt Legacy App"></iframe>
+        <div class="hint">验证点：拖动/缩放 Electron 后，Qt 窗口应持续贴合该区域。</div>
+      </div>
+    </div>
+    <script src="./renderer.js"></script>
+  </body>
+</html>
